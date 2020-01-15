@@ -39,7 +39,7 @@ __cmdclass = versioneer.get_cmdclass()
 __cmdclass["generate_dataverse_file"] = GenerateDataverseInstallationsFileCommand
 
 setup(
-    name="jupyter-repo2docker",
+    name="dws-repo2docker",
     version=versioneer.get_version(),
     install_requires=[
         "docker",
