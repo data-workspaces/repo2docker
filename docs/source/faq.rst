@@ -28,7 +28,7 @@ Repo2docker officially supports the following versions of Python
 - 2.7
 
 Additional versions may work, as long as the
-`base environment <https://github.com/jupyter/repo2docker/blob/master/repo2docker/buildpacks/conda/environment.yml>`_
+`base environment <https://github.com/jupyterhub/repo2docker/blob/master/repo2docker/buildpacks/conda/environment.yml>`_
 can be installed for your version of Python.
 The most likely source of incompatibility is if one of the packages
 in the base environment is not packaged for your Python,
@@ -56,7 +56,7 @@ file.
 We support R versions 3.4, 3.5 and 3.6.
 
 
-Why is my repository is failing to build with ``ResolvePackageNotFound`` ?
+Why is my repository failing to build with ``ResolvePackageNotFound`` ?
 --------------------------------------------------------------------------
 
 If you used ``conda env export`` to generate your ``environment.yml`` it will
@@ -133,7 +133,7 @@ This builds a Docker container from the files in that repository
 then runs that container, while connecting the working directory
 inside the container to the local repository outside the
 container. For example, in case there is a notebook file (``.ipynb``),
-this will open in a local webbrowser, and one can edit it and save
+this will open in a local web browser, and one can edit it and save
 it. The resulting notebook is updated in both the Docker container and
 the local repository. Once the container is exited, the changed file
 will still be in the local repository.
@@ -172,7 +172,7 @@ possible (this is why repo2docker buildpacks largely build off of patterns that 
 exist in the data analytics community). We try to perform due-diligence and search for
 other communities to leverage and help, but sometimes it makes the most sense to build
 our own new tool. In the case of repo2docker, we spent time integrating with a pre-existing
-tool called [source2image](https://github.com/openshift/source-to-image).
+tool called `source2image <https://github.com/openshift/source-to-image/>`_.
 This is an excellent open tool for containerization, but we
 ultimately decided that it did not fit the use-case we wanted to address. For more information,
-[here's a short blog post about the decision and the reasoning behind it](https://github.com/yuvipanda/words/blob/fd096dd49d87e624acd8bdf6d13c0cecb930bb3f/content/post/why-not-s2i.md).
+`here <https://github.com/yuvipanda/words/blob/fd096dd49d87e624acd8bdf6d13c0cecb930bb3f/content/post/why-not-s2i.md>`_ is a short blog post about the decision and the reasoning behind it.
