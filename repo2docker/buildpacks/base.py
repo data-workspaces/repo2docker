@@ -9,9 +9,6 @@ import string
 import sys
 import hashlib
 import escapism
-import xml.etree.ElementTree as ET
-
-from traitlets import Dict
 
 # Only use syntax features supported by Docker 17.09
 TEMPLATE = r"""
@@ -54,11 +51,6 @@ RUN groupadd \
         --shell /bin/bash \
         --uid ${NB_UID} \
         ${NB_USER}
-
-RUN wget --quiet -O - https://deb.nodesource.com/gpgkey/nodesource.gpg.key |  apt-key add - && \
-    DISTRO="bionic" && \
-    echo "deb https://deb.nodesource.com/node_14.x $DISTRO main" >> /etc/apt/sources.list.d/nodesource.list && \
-    echo "deb-src https://deb.nodesource.com/node_14.x $DISTRO main" >> /etc/apt/sources.list.d/nodesource.list
 
 # Base package installs are not super interesting to users, so hide their outputs
 # If install fails for some reason, errors will still be printed
@@ -108,6 +100,8 @@ COPY --chown={{ user }}:{{ user }} {{ src }} {{ dst }}
 {% for sd in build_script_directives -%}
 {{ sd }}
 {% endfor %}
+# ensure root user after build scripts
+USER root
 
 # Allow target path repo is cloned to be configurable
 ARG REPO_DIR=${HOME}
@@ -146,6 +140,8 @@ COPY --chown={{ user }}:{{ user }} src/{{ src }} ${REPO_DIR}/{{ dst }}
 {% for sd in preassemble_script_directives -%}
 {{ sd }}
 {% endfor %}
+# ensure root user after preassemble scripts
+USER root
 
 # Copy stuff.
 COPY --chown={{ user }}:{{ user }} src/ ${REPO_DIR}
@@ -181,6 +177,8 @@ ENV R2D_ENTRYPOINT "{{ start_script }}"
 {% endif -%}
 
 # Add entrypoint
+ENV PYTHONUNBUFFERED=1
+COPY /python3-login /usr/local/bin/python3-login
 COPY /repo2docker-entrypoint /usr/local/bin/repo2docker-entrypoint
 ENTRYPOINT ["/usr/local/bin/repo2docker-entrypoint"]
 
@@ -193,9 +191,7 @@ CMD ["jupyter", "notebook", "--ip", "0.0.0.0"]
 {% endif %}
 """
 
-ENTRYPOINT_FILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "repo2docker-entrypoint"
-)
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Also used for the group
 DEFAULT_NB_UID = 1000
@@ -250,7 +246,6 @@ class BuildPack:
         return {
             # Utils!
             "less",
-            "nodejs",
             "unzip",
         }
 
@@ -582,7 +577,8 @@ class BuildPack:
             dest_path, src_path = self.generate_build_context_filename(src)
             tar.add(src_path, dest_path, filter=_filter_tar)
 
-        tar.add(ENTRYPOINT_FILE, "repo2docker-entrypoint", filter=_filter_tar)
+        for fname in ("repo2docker-entrypoint", "python3-login"):
+            tar.add(os.path.join(HERE, fname), fname, filter=_filter_tar)
 
         tar.add(".", "src/", filter=_filter_tar)
 
@@ -609,9 +605,6 @@ class BuildPack:
             tag=image_spec,
             custom_context=True,
             buildargs=build_args,
-            decode=True,
-            forcerm=True,
-            rm=True,
             container_limits=limits,
             cache_from=cache_from,
         )
@@ -627,31 +620,7 @@ class BaseImage(BuildPack):
         """Return env directives required for build"""
         return [
             ("APP_BASE", "/srv"),
-            ("NPM_DIR", "${APP_BASE}/npm"),
-            ("NPM_CONFIG_GLOBALCONFIG", "${NPM_DIR}/npmrc"),
         ]
-
-    def get_path(self):
-        return super().get_path() + ["${NPM_DIR}/bin"]
-
-    def get_build_scripts(self):
-        scripts = [
-            (
-                "root",
-                r"""
-                mkdir -p ${NPM_DIR} && \
-                chown -R ${NB_USER}:${NB_USER} ${NPM_DIR}
-                """,
-            ),
-            (
-                "${NB_USER}",
-                r"""
-                npm config --global set prefix ${NPM_DIR}
-                """,
-            ),
-        ]
-
-        return super().get_build_scripts() + scripts
 
     def get_env(self):
         """Return env directives to be set after build"""
